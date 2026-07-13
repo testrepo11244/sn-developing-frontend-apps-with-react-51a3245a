@@ -1,77 +1,99 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { removeFromCart, increaseQuantity, decreaseQuantity } from '../redux/cartSlice';
 import { Link } from 'react-router-dom';
-import {
-  removeItem,
-  incrementQuantity,
-  decrementQuantity,
-  selectTotalItems,
-  selectTotalAmount
-} from '../CartSlice';
+
+const Navbar = () => {
+  const cartItems = useSelector(state => state.cart.items);
+  const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  return (
+    <nav className="navbar">
+      <Link to="/" className="nav-link">Home</Link>
+      <Link to="/products" className="nav-link">Plants</Link>
+      <Link to="/cart" className="nav-link cart-link">
+        Cart🛒
+        {totalQuantity > 0 && <span className="cart-count">{totalQuantity}</span>}
+      </Link>
+    </nav>
+  );
+};
 
 function CartItem() {
-  const cartItems = useSelector(state => state.cart.items);
-  const totalItems = useSelector(selectTotalItems);
-  const totalAmount = useSelector(selectTotalAmount);
   const dispatch = useDispatch();
+  const cartItems = useSelector(state => state.cart.items);
 
-  const handleDecrease = (item) => {
-    if (item.quantity === 1) {
-      dispatch(removeItem(item.id));
-    } else {
-      dispatch(decrementQuantity(item.id));
-    }
-  };
-
-  const handleIncrease = (item) => {
-    dispatch(incrementQuantity(item.id));
-  };
-
-  const handleDelete = (itemId) => {
-    dispatch(removeItem(itemId));
+  const calculateTotalAmount = () => {
+    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
   const handleCheckout = () => {
-    alert('Coming Soon!');
+    alert('Coming Soon');
   };
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="cart-page">
+        <Navbar />
+        <div className="empty-cart">
+          <h2>Your cart is empty</h2>
+          <Link to="/products" className="continue-shopping-link">Continue Shopping</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="cart-page">
-      <h2>Shopping Cart</h2>
-      {cartItems.length === 0 ? (
-        <p className="empty-cart">Your cart is empty.</p>
-      ) : (
-        <>
-          <div className="cart-summary">
-            <p>Total Items: {totalItems}</p>
-            <p>Total Amount: ${totalAmount.toFixed(2)}</p>
-          </div>
-          <div className="cart-items-list">
-            {cartItems.map((item) => (
-              <div key={item.id} className="cart-item">
-                <img src={item.thumbnail} alt={item.name} className="cart-item-thumbnail" />
-                <div className="cart-item-details">
-                  <h3>{item.name}</h3>
-                  <p className="unit-price">${item.price.toFixed(2)} each</p>
-                  <p className="item-total">Total: ${(item.price * item.quantity).toFixed(2)}</p>
+      <Navbar />
+      <div className="cart-container">
+        <h1>Shopping Cart</h1>
+        <ul className="cart-items-list">
+          {cartItems.map(item => (
+            <li key={item.id} className="cart-item">
+              <img src={item.thumbnail} alt={item.name} className="cart-item-thumbnail" />
+              <div className="cart-item-details">
+                <h3 className="cart-item-name">{item.name}</h3>
+                <p className="cart-item-unit-price">${item.price} each</p>
+                <div className="quantity-controls">
+                  <button
+                    className="qty-btn"
+                    onClick={() => dispatch(decreaseQuantity(item.id))}
+                    disabled={item.quantity <= 1}
+                  >
+                    -
+                  </button>
+                  <span className="quantity">{item.quantity}</span>
+                  <button
+                    className="qty-btn"
+                    onClick={() => dispatch(increaseQuantity(item.id))}
+                  >
+                    +
+                  </button>
                 </div>
-                <div className="cart-item-actions">
-                  <div className="quantity-controls">
-                    <button onClick={() => handleDecrease(item)} disabled={item.quantity <= 1 ? false : false}>-</button>
-                    <span className="quantity">{item.quantity}</span>
-                    <button onClick={() => handleIncrease(item)}>+</button>
-                  </div>
-                  <button className="delete-btn" onClick={() => handleDelete(item.id)}>Delete</button>
-                </div>
+                <p className="cart-item-total-cost">
+                  Total: ${(item.price * item.quantity).toFixed(2)}
+                </p>
+                <button
+                  className="delete-btn"
+                  onClick={() => dispatch(removeFromCart(item.id))}
+                >
+                  Delete
+                </button>
               </div>
-            ))}
-          </div>
-          <div className="cart-footer">
-            <button className="checkout-btn" onClick={handleCheckout}>Checkout</button>
-            <Link to="/products" className="continue-shopping-link">Continue Shopping</Link>
-          </div>
-        </>
-      )}
+            </li>
+          ))}
+        </ul>
+        <div className="cart-summary">
+          <h2>Total Amount: ${calculateTotalAmount().toFixed(2)}</h2>
+          <button className="checkout-btn" onClick={handleCheckout}>
+            Checkout
+          </button>
+          <Link to="/products" className="continue-shopping-link">
+            Continue Shopping
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
